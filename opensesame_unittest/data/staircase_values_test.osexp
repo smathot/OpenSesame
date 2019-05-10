@@ -1,0 +1,174 @@
+---
+API: 2.1
+OpenSesame: 3.2.5
+Platform: nt
+---
+set width 1024
+set uniform_coordinates yes
+set title Staircase_values_test
+set subject_parity even
+set subject_nr 0
+set start experiment
+set sound_sample_size -16
+set sound_freq 48000
+set sound_channels 2
+set sound_buf_size 1024
+set sampler_backend legacy
+set round_decimals 2
+set mouse_backend xpyriment
+set keyboard_backend legacy
+set height 768
+set fullscreen no
+set form_clicks no
+set foreground white
+set font_underline no
+set font_size 18
+set font_italic no
+set font_family mono
+set font_bold no
+set experiment_path "C:/Users/s2491907/Desktop"
+set disable_garbage_collection yes
+set description "The main experiment item"
+set coordinates uniform
+set compensation 0
+set color_backend legacy
+set clock_backend legacy
+set canvas_backend xpyriment
+set background black
+
+define inline_script autoresponse
+	set description "Executes Python code"
+	___run__
+	import numpy as np
+	
+	
+	def autoresponse(probability):
+		
+		response = np.random.choice(a = [0,1], size = 1, p = [1-probability, probability])
+		
+		return response
+	__end__
+	set _prepare ""
+
+define inline_script check_convergence
+	set description "Executes Python code"
+	___run__
+	if var.one_test_value < .70 or var.one_test_value > .80:
+		raise Exception('Staircase didn\'t converge')
+		
+	if var.two_test_value < .85 or var.two_test_value > .95:
+		raise Exception('Staircase didn\'t converge')
+		
+	if var.three_test_value < .55 or var.three_test_value > .65:
+		raise Exception('Staircase didn\'t converge')
+	__end__
+	set _prepare ""
+
+define sequence experiment
+	set flush_keyboard yes
+	set description "Runs a number of items in sequence"
+	run autoresponse always
+	run staircase_1_init always
+	run staircase_2_init always
+	run staircase_3_init always
+	run loop always
+	run check_convergence always
+
+define inline_script generate_response
+	set description "Executes Python code"
+	___run__
+	if var.target == 'green':
+		var.correct = autoresponse(var.one_test_value)
+		
+	elif var.target == 'yellow':
+		var.correct = autoresponse(var.two_test_value)
+		
+	else:
+		var.correct = autoresponse(var.three_test_value)
+	__end__
+	set _prepare ""
+
+define loop loop
+	set source table
+	set repeat 200
+	set order random
+	set description "Repeatedly runs another item"
+	set cycles 3
+	set continuous no
+	set break_if_on_first yes
+	set break_if never
+	setcycle 0 target green
+	setcycle 1 target yellow
+	setcycle 2 target red
+	run sequence
+
+define logger new_logger
+	set description "Logs experimental data"
+	set auto_log yes
+
+define sequence sequence
+	set flush_keyboard yes
+	set description "Runs a number of items in sequence"
+	run generate_response always
+	run staircase_1_next "[target] == 'green'"
+	run staircase_2_next "[target] == 'yellow'"
+	run staircase_3_next "[target] == 'red'"
+	run new_logger always
+
+define quest_staircase_init staircase_1_init
+	set var_test_value one_test_value
+	set test_value_method quantile
+	set t_guess_sd 0.25
+	set t_guess 0.5
+	set p_threshold 0.75
+	set name staircase_one
+	set min_test_value 0
+	set max_test_value 1
+	set gamma 0.5
+	set description "Initializes a new Quest staircase procedure"
+	set delta 0.01
+	set beta 3.5
+
+define quest_staircase_next staircase_1_next
+	set response_var correct
+	set linked_quest staircase_one
+	set description "Updates the Quest test value based on a response"
+
+define quest_staircase_init staircase_2_init
+	set var_test_value two_test_value
+	set test_value_method quantile
+	set t_guess_sd 0.25
+	set t_guess 0.5
+	set p_threshold 0.9
+	set name staircase_two
+	set min_test_value 0
+	set max_test_value 1
+	set gamma 0.5
+	set description "Initializes a new Quest staircase procedure"
+	set delta 0.01
+	set beta 3.5
+
+define quest_staircase_next staircase_2_next
+	set response_var correct
+	set linked_quest staircase_two
+	set description "Updates the Quest test value based on a response"
+
+define quest_staircase_init staircase_3_init
+	set var_test_value three_test_value
+	set test_value_method quantile
+	set t_guess_sd 0.25
+	set t_guess 0.5
+	set p_threshold 0.6
+	set name staircase_three
+	set min_test_value 0
+	set max_test_value 1
+	set gamma 0.5
+	set description "Initializes a new Quest staircase procedure"
+	set delta 0.01
+	set beta 3.5
+
+define quest_staircase_next staircase_3_next
+	set response_var correct
+	set linked_quest staircase_three
+	set description "Updates the Quest test value based on a response"
+
